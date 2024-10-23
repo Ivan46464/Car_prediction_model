@@ -5,8 +5,11 @@ from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 from mlxtend.plotting import plot_sequential_feature_selection as plot_sfs
 from matplotlib import pyplot as plt
 import seaborn as sns
+from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import PolynomialFeatures
+
+
 
 data = pd.read_csv('CarPricesPrediction.csv')
 data.drop('Unnamed: 0', axis=1, inplace=True)
@@ -33,12 +36,18 @@ correlation_matrix = numeric_data.corr()
 plt.figure(figsize=(10, 8))
 sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', linewidths=0.5)
 plt.show()
-lr = LinearRegression()
-X = data[['Model', 'Year', 'Mileage', 'Condition']]
-y = data['Price']
+X = data[['Model', 'Year', 'Mileage', 'Condition']].values
+y = data['Price'].values
+from sklearn.preprocessing import StandardScaler
+
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
-sfs = SFS(lr, k_features=4,
+
+
+poly = PolynomialFeatures(degree=2)
+X_poly = poly.fit_transform(X_scaled)
+lin_reg = LinearRegression()
+sfs = SFS(lin_reg, k_features=4,
            forward=True ,
            floating=False,
            scoring='r2',
@@ -49,17 +58,15 @@ print(sfs.subsets_[3]['avg_score'])
 plot_sfs(sfs.get_metric_dict())
 plt.show()
 
-X_train,X_test,y_train,y_test = train_test_split(X_scaled,y,test_size=0.2,random_state=42)
-lr.fit(X_train,y_train)
-print(f"Score:{lr.score(X_test,y_test)}")
-y_pred = lr.predict(X_test)
-from sklearn.metrics import mean_squared_error, r2_score
+X_train,X_test,y_train,y_test = train_test_split(X_poly,y,test_size=0.2,random_state=42)
+lin_reg.fit(X_train, y_train)
+print(f"Score:{lin_reg.score(X_test,y_test)}")
+y_pred_poly = lin_reg.predict(X_test)
 
-mse = mean_squared_error(y_test, y_pred)
-r2 = r2_score(y_test, y_pred)
+mse_poly = mean_squared_error(y_test, y_pred_poly)
+r2_poly = r2_score(y_test, y_pred_poly)
 
-print(f"Mean Squared Error: {mse}")
-print(f"R-squared: {r2}")
-
-
+print(f"Polynomial Degree: {2}")
+print(f"Mean Squared Error (Polynomial Regression): {mse_poly}")
+print(f"R-squared (Polynomial Regression): {r2_poly}")
 
